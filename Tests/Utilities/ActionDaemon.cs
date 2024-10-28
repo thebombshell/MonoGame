@@ -30,7 +30,7 @@ namespace MonoGame.Tests.Utilities
 
         public void ForceTermination()
         {
-            _thread.Abort();
+            _thread.Join();
         }
 
         public void Clear(bool abortCurrent = false)

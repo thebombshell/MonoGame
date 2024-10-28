@@ -95,7 +95,9 @@ namespace Microsoft.Xna.Framework.Graphics
 #else
                     GraphicsDevice.FramebufferHelper.Get().GenerateMipmap((int)glTarget);
                     // This updates the mipmaps after a change in the base texture
-                    GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.GenerateMipmap, (int)Bool.True);
+                    // 4.6 COMPLIANCE
+                    // this is no longer supported
+                    //GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.GenerateMipmap, (int)Bool.True);
 #endif
                     GraphicsExtensions.CheckGLError();
                 }

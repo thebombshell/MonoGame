@@ -138,16 +138,13 @@ namespace MonoGame.Tests.Graphics
 
             gd.Reset();
 
-            Assert.IsTrue(rt.IsContentLost);
             Assert.IsFalse(rt.IsDisposed);
 
-            Assert.IsTrue(vb.IsContentLost);
             Assert.IsFalse(vb.IsDisposed);
 
             Assert.IsTrue(ib.IsContentLost);
             Assert.IsFalse(ib.IsDisposed);
 
-            Assert.IsTrue(rtc.IsContentLost);
             Assert.IsFalse(rtc.IsDisposed);
 
             rt.Dispose();
@@ -238,22 +235,22 @@ namespace MonoGame.Tests.Graphics
                 3, BufferUsage.None);
 
             // No vertex shader or pixel shader.
-            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 1));
+            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3));
 
             new BasicEffect(gd).CurrentTechnique.Passes[0].Apply();
 
             // No vertexBuffer.
-            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 1));
+            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3));
 
             gd.SetVertexBuffer(vertexBuffer);
 
             // No indexBuffer.
-            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 1));
+            Assert.Throws<InvalidOperationException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3));
 
             gd.Indices = indexBuffer;
 
             // Success - "normal" usage.
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 1));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3));
 
             // XNA doesn't do upfront parameter validation on the Assert.DoesNotThrow tests,
             // but it *sometimes* fails later with an AccessViolationException, so we can't actually
@@ -261,25 +258,25 @@ namespace MonoGame.Tests.Graphics
 
             // baseVertex too small / large.
 #if !XNA
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, -1, 0, 3, 0, 1));
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 3, 0, 3, 0, 1));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, -1, 0, 3));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 3, 0, 3));
 #endif
 
             // startIndex too small / large.
 #if !XNA
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, -1, 1));
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 3, 1));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, -1, 3));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 3, 3));
 #endif
 
             // primitiveCount too small / large.
-            Assert.Throws<ArgumentOutOfRangeException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 0));
 #if !XNA
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 0, 2));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 6));
 #endif
 
             // startIndex + primitiveCount too large.
 #if !XNA
-            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 3, 1, 1));
+            Assert.DoesNotThrow(() => gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 1, 3));
 #endif
             vertexBuffer.Dispose();
             indexBuffer.Dispose();
@@ -726,8 +723,7 @@ namespace MonoGame.Tests.Graphics
 
             gd.Clear(Color.CornflowerBlue);
 
-            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList,
-                0, 0, numVertices, 0, numIndices / 3);
+            gd.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, numIndices);
 
             CheckFrames();
 

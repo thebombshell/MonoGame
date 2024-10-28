@@ -32,8 +32,15 @@ namespace Microsoft.Xna.Framework.Graphics
             Shader,
             Program,
             Query,
-            Framebuffer
+            Framebuffer,
+            VertexArray
         }
+
+        // 4.6 COMPLIANCE
+
+        private int _vertexArrayObject = 0;
+        private int _streamingVertexBuffer = 0;
+        private int _streamingIndexBuffer = 0;
 
         struct ResourceHandle
         {
@@ -70,6 +77,11 @@ namespace Microsoft.Xna.Framework.Graphics
                 return new ResourceHandle() { type = ResourceType.Framebuffer, handle = handle };
             }
 
+            public static ResourceHandle VertexArray(int handle)
+            {
+                return new ResourceHandle() { type = ResourceType.VertexArray, handle = handle };
+            }
+
             public void Free()
             {
                 switch (type)
@@ -97,6 +109,9 @@ namespace Microsoft.Xna.Framework.Graphics
                         break;
                     case ResourceType.Framebuffer:
                         GL.DeleteFramebuffers(1, ref handle);
+                        break;
+                    case ResourceType.VertexArray:
+                        GL.DeleteVertexArrays(1, ref handle);
                         break;
                 }
                 GraphicsExtensions.CheckGLError();
@@ -352,6 +367,11 @@ namespace Microsoft.Xna.Framework.Graphics
             _bufferBindingInfos = new BufferBindingInfo[_maxVertexBufferSlots];
             for (int i = 0; i < _bufferBindingInfos.Length; i++)
                 _bufferBindingInfos[i] = new BufferBindingInfo(null, IntPtr.Zero, 0, -1);
+
+            GL.GenVertexArrays(1, out _vertexArrayObject);
+            GL.GenBuffers(1, out _streamingVertexBuffer);
+            GL.GenBuffers(1, out _streamingIndexBuffer);
+        GL.BindVertexArray(_vertexArrayObject);
         }
         
         private DepthStencilState clearDepthStencilState = new DepthStencilState { StencilEnable = true };
@@ -1069,26 +1089,35 @@ namespace Microsoft.Xna.Framework.Graphics
             GraphicsExtensions.CheckGLError();
         }
 
-        private void PlatformDrawUserPrimitives<T>(
+        unsafe private void PlatformDrawUserPrimitives<T>(
             PrimitiveType primitiveType, T[] vertexData, int vertexOffset, VertexDeclaration vertexDeclaration, int vertexCount)
             where T : struct
         {
             ApplyState(true);
 
+            // 4.6 COMPLIANCE
             // Unbind current VBOs.
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _streamingVertexBuffer);
             GraphicsExtensions.CheckGLError();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _streamingIndexBuffer);
             GraphicsExtensions.CheckGLError();
             _indexBufferDirty = true;
+
+            var vertexSizeInBytes = sizeof(T) * vertexData.Length;
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)vertexSizeInBytes, (IntPtr)0, BufferUsageHint.StreamDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)0, (IntPtr)0, BufferUsageHint.StreamDraw);
 
             // Pin the buffers.
             var vbHandle = GCHandle.Alloc(vertexData, GCHandleType.Pinned);
             try
             {
+                var vertexAddr = (IntPtr)(vbHandle.AddrOfPinnedObject().ToInt64());
+
+                GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)vertexSizeInBytes, vertexAddr);
+                GraphicsExtensions.CheckGLError();
                 // Setup the vertex declaration to point at the VB data.
                 vertexDeclaration.GraphicsDevice = this;
-                vertexDeclaration.Apply(_vertexShader, vbHandle.AddrOfPinnedObject(), ShaderProgramHash);
+                vertexDeclaration.Apply(_vertexShader, 0, ShaderProgramHash);
 
                 //Draw
                 GL.DrawArrays(PrimitiveTypeGL(primitiveType),
@@ -1118,36 +1147,50 @@ namespace Microsoft.Xna.Framework.Graphics
             GraphicsExtensions.CheckGLError();
         }
 
-        private void PlatformDrawUserIndexedPrimitives<T>(
+        unsafe private void PlatformDrawUserIndexedPrimitives<T>(
             PrimitiveType primitiveType, T[] vertexData, int vertexOffset, int numVertices, short[] indexData, int indexOffset, int primitiveCount, VertexDeclaration vertexDeclaration)
             where T : struct
         {
             ApplyState(true);
 
-            // Unbind current VBOs.
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            // 4.6 COMPLIANCE
+            // Rebing the VBOs and skip the pinning
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _streamingVertexBuffer);
             GraphicsExtensions.CheckGLError();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _streamingIndexBuffer);
             GraphicsExtensions.CheckGLError();
             _indexBufferDirty = true;
+
+            var vertexSizeInBytes = sizeof(T) * vertexData.Length;
+            var indexSizeInBytes = sizeof(short) * indexData.Length;
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)vertexSizeInBytes, (IntPtr)0, BufferUsageHint.StreamDraw);
+            GraphicsExtensions.CheckGLError();
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)indexSizeInBytes, (IntPtr)0, BufferUsageHint.StreamDraw);
+            GraphicsExtensions.CheckGLError();
 
             // Pin the buffers.
             var vbHandle = GCHandle.Alloc(vertexData, GCHandleType.Pinned);
             var ibHandle = GCHandle.Alloc(indexData, GCHandleType.Pinned);
             try
             {
-                var vertexAddr = (IntPtr)(vbHandle.AddrOfPinnedObject().ToInt64() + vertexDeclaration.VertexStride * vertexOffset);
+                var vertexAddr = (IntPtr)(vbHandle.AddrOfPinnedObject().ToInt64());
+                var indexAddr = (IntPtr)(ibHandle.AddrOfPinnedObject().ToInt64());
+
+                GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)vertexSizeInBytes, vertexAddr);
+                GraphicsExtensions.CheckGLError();
+                GL.BufferSubData(BufferTarget.ElementArrayBuffer, (IntPtr)0, (IntPtr)indexSizeInBytes, indexAddr);
+                GraphicsExtensions.CheckGLError();
 
                 // Setup the vertex declaration to point at the VB data.
                 vertexDeclaration.GraphicsDevice = this;
-                vertexDeclaration.Apply(_vertexShader, vertexAddr, ShaderProgramHash);
+                vertexDeclaration.Apply(_vertexShader, 0, ShaderProgramHash);
 
                 //Draw
                 GL.DrawElements(
                     PrimitiveTypeGL(primitiveType),
                     GetElementCountArray(primitiveType, primitiveCount),
                     DrawElementsType.UnsignedShort,
-                    (IntPtr)(ibHandle.AddrOfPinnedObject().ToInt64() + (indexOffset * sizeof(short))));
+                    0);
                 GraphicsExtensions.CheckGLError();
             }
             finally

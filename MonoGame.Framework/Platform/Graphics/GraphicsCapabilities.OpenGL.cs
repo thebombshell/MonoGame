@@ -112,7 +112,7 @@ namespace Microsoft.Xna.Framework.Graphics
             // once we can author shaders that use texture arrays.
             SupportsTextureArrays = false;
 
-            SupportsDepthClamp = GL.Extensions.Contains("GL_ARB_depth_clamp");
+            SupportsDepthClamp = true;//GL.Extensions.Contains("GL_ARB_depth_clamp");
 
             SupportsVertexTextures = false; // For now, until we implement vertex textures in OpenGL.
 

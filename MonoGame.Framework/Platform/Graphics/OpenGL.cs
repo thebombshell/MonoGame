@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MonoGame.Framework.Utilities;
+using System.ComponentModel.Design;
 
 #if __IOS__ || __TVOS__ || MONOMAC
 using ObjCRuntime;
@@ -592,6 +593,12 @@ namespace MonoGame.OpenGL
         [MonoNativeFunctionWrapper]
         internal delegate IntPtr GetStringDelegate(StringName param);
         internal static GetStringDelegate GetStringInternal;
+
+        [System.Security.SuppressUnmanagedCodeSecurity()]
+        [UnmanagedFunctionPointer(callingConvention)]
+        [MonoNativeFunctionWrapper]
+        internal delegate IntPtr GetStringiDelegate(StringName param, int index);
+        internal static GetStringiDelegate GetStringiInternal;
 
         [System.Security.SuppressUnmanagedCodeSecurity()]
         [UnmanagedFunctionPointer(callingConvention)]
@@ -1258,6 +1265,24 @@ namespace MonoGame.OpenGL
 
         internal static int SwapInterval { get; set; }
 
+        // 4.6 COMPLIANCE
+
+        [System.Security.SuppressUnmanagedCodeSecurity()]
+        [MonoNativeFunctionWrapper]
+        internal delegate void GenVertexArraysDelegate(int count, [Out] out int buffer);
+        internal static GenVertexArraysDelegate GenVertexArrays;
+
+        [System.Security.SuppressUnmanagedCodeSecurity()]
+        [MonoNativeFunctionWrapper]
+        internal delegate void BindVertexArrayDelegate(int buffer);
+        internal static BindVertexArrayDelegate BindVertexArray;
+
+        [System.Security.SuppressUnmanagedCodeSecurity()]
+        [MonoNativeFunctionWrapper]
+        internal delegate void DeleteVertexArraysDelegate(int count, [In] [Out] ref int buffer);
+        internal static DeleteVertexArraysDelegate DeleteVertexArrays;
+
+
         internal static void LoadEntryPoints ()
         {
             LoadPlatformEntryPoints ();
@@ -1269,6 +1294,12 @@ namespace MonoGame.OpenGL
             if (MakeCurrent == null)
                 MakeCurrent = LoadFunction<MakeCurrentDelegate> ("glMakeCurrent");
 
+            // 4.6 COMPLIANCE
+
+            GenVertexArrays = LoadFunction<GenVertexArraysDelegate>("glGenVertexArrays");
+            BindVertexArray = LoadFunction<BindVertexArrayDelegate>("glBindVertexArray");
+            DeleteVertexArrays = LoadFunction<DeleteVertexArraysDelegate>("glDeleteVertexArrays");
+
             GetError = LoadFunction<GetErrorDelegate> ("glGetError");
 
             TexParameterf = LoadFunction<TexParameterFloatDelegate> ("glTexParameterf");
@@ -1278,7 +1309,8 @@ namespace MonoGame.OpenGL
             EnableVertexAttribArray = LoadFunction<EnableVertexAttribArrayDelegate> ("glEnableVertexAttribArray");
             DisableVertexAttribArray = LoadFunction<DisableVertexAttribArrayDelegate> ("glDisableVertexAttribArray");
             GetIntegerv = LoadFunction<GetIntegerDelegate> ("glGetIntegerv");
-            GetStringInternal = LoadFunction<GetStringDelegate> ("glGetString");
+            GetStringInternal = LoadFunction<GetStringDelegate>("glGetString");
+            GetStringiInternal = LoadFunction<GetStringiDelegate>("glGetStringi");
             ClearDepth = LoadFunction<ClearDepthDelegate> ("glClearDepth");
             if (ClearDepth == null)
                 ClearDepth = LoadFunction<ClearDepthDelegate> ("glClearDepthf");
@@ -1441,68 +1473,33 @@ namespace MonoGame.OpenGL
 
         internal static void LoadExtensions()
         {
-            if (Extensions.Count == 0)
-            {
-                string extstring = GL.GetString(StringName.Extensions);
-                var error = GL.GetError();
-                if (!string.IsNullOrEmpty(extstring) && error == ErrorCode.NoError)
-                    Extensions.AddRange(extstring.Split(' '));
-            }
-            LogExtensions();
-            // now load Extensions :)
-            if (GL.GenRenderbuffers == null && Extensions.Contains("GL_EXT_framebuffer_object"))
-            {
-                GL.LoadFrameBufferObjectEXTEntryPoints();
-            }
-            if (GL.RenderbufferStorageMultisample == null)
-            {                
-                if (Extensions.Contains("GL_APPLE_framebuffer_multisample"))
-                {
-                    GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleAPPLE");
-                    GL.BlitFramebuffer = LoadFunction<GL.BlitFramebufferDelegate>("glResolveMultisampleFramebufferAPPLE");
-                }
-                else if (Extensions.Contains("GL_EXT_multisampled_render_to_texture"))
-                {
-                    GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleEXT");
-                    GL.FramebufferTexture2DMultiSample = LoadFunction<GL.FramebufferTexture2DMultiSampleDelegate>("glFramebufferTexture2DMultisampleEXT");
+            //LogExtensions();
 
-                }
-                else if (Extensions.Contains("GL_IMG_multisampled_render_to_texture"))
-                {
-                    GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleIMG");
-                    GL.FramebufferTexture2DMultiSample = LoadFunction<GL.FramebufferTexture2DMultiSampleDelegate>("glFramebufferTexture2DMultisampleIMG");
-                }
-                else if (Extensions.Contains("GL_NV_framebuffer_multisample"))
-                {
-                    GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleNV");
-                    GL.BlitFramebuffer = LoadFunction<GL.BlitFramebufferDelegate>("glBlitFramebufferNV");
-                }
-            }
-            if (GL.BlendFuncSeparatei == null && Extensions.Contains("GL_ARB_draw_buffers_blend"))
-            {
-                GL.BlendFuncSeparatei = LoadFunction<GL.BlendFuncSeparateiDelegate>("BlendFuncSeparateiARB");
-            }
-            if (GL.BlendEquationSeparatei == null && Extensions.Contains("GL_ARB_draw_buffers_blend"))
-            {
-                GL.BlendEquationSeparatei = LoadFunction<GL.BlendEquationSeparateiDelegate>("BlendEquationSeparateiARB");
-            }
+            // 4.6 COMPLIANCE
+            // these extensions are now core functionality
+
+            GL.LoadFrameBufferObjectEXTEntryPoints();
+            GL.BlendFuncSeparatei = LoadFunction<GL.BlendFuncSeparateiDelegate>("BlendFuncSeparatei");
+            GL.BlendEquationSeparatei = LoadFunction<GL.BlendEquationSeparateiDelegate>("BlendEquationSeparatei");
         }
 
         internal static void LoadFrameBufferObjectEXTEntryPoints()
         {
-            GenRenderbuffers = LoadFunction<GenRenderbuffersDelegate>("glGenRenderbuffersEXT");
-            BindRenderbuffer = LoadFunction<BindRenderbufferDelegate>("glBindRenderbufferEXT");
-            DeleteRenderbuffers = LoadFunction<DeleteRenderbuffersDelegate>("glDeleteRenderbuffersEXT");
-            GenFramebuffers = LoadFunction<GenFramebuffersDelegate>("glGenFramebuffersEXT");
-            BindFramebuffer = LoadFunction<BindFramebufferDelegate>("glBindFramebufferEXT");
-            DeleteFramebuffers = LoadFunction<DeleteFramebuffersDelegate>("glDeleteFramebuffersEXT");
-            FramebufferTexture2D = LoadFunction<FramebufferTexture2DDelegate>("glFramebufferTexture2DEXT");
-            FramebufferRenderbuffer = LoadFunction<FramebufferRenderbufferDelegate>("glFramebufferRenderbufferEXT");
-            RenderbufferStorage = LoadFunction<RenderbufferStorageDelegate>("glRenderbufferStorageEXT");
-            RenderbufferStorageMultisample = LoadFunction<RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleEXT");
-            GenerateMipmap = LoadFunction<GenerateMipmapDelegate>("glGenerateMipmapEXT");
-            BlitFramebuffer = LoadFunction<BlitFramebufferDelegate>("glBlitFramebufferEXT");
-            CheckFramebufferStatus = LoadFunction<CheckFramebufferStatusDelegate>("glCheckFramebufferStatusEXT");
+            // 4.6 COMPLIANCE
+            // this extension is now core functionality
+            GenRenderbuffers = LoadFunction<GenRenderbuffersDelegate>("glGenRenderbuffers");
+            BindRenderbuffer = LoadFunction<BindRenderbufferDelegate>("glBindRenderbuffer");
+            DeleteRenderbuffers = LoadFunction<DeleteRenderbuffersDelegate>("glDeleteRenderbuffers");
+            GenFramebuffers = LoadFunction<GenFramebuffersDelegate>("glGenFramebuffers");
+            BindFramebuffer = LoadFunction<BindFramebufferDelegate>("glBindFramebuffer");
+            DeleteFramebuffers = LoadFunction<DeleteFramebuffersDelegate>("glDeleteFramebuffers");
+            FramebufferTexture2D = LoadFunction<FramebufferTexture2DDelegate>("glFramebufferTexture2D");
+            FramebufferRenderbuffer = LoadFunction<FramebufferRenderbufferDelegate>("glFramebufferRenderbuffer");
+            RenderbufferStorage = LoadFunction<RenderbufferStorageDelegate>("glRenderbufferStorage");
+            RenderbufferStorageMultisample = LoadFunction<RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisample");
+            GenerateMipmap = LoadFunction<GenerateMipmapDelegate>("glGenerateMipmap");
+            BlitFramebuffer = LoadFunction<BlitFramebufferDelegate>("glBlitFramebuffer");
+            CheckFramebufferStatus = LoadFunction<CheckFramebufferStatusDelegate>("glCheckFramebufferStatus");
         }
 
         static partial void LoadPlatformEntryPoints();
@@ -1530,9 +1527,14 @@ namespace MonoGame.OpenGL
             Uniform4fv(location, size, value);
         }
 
-        internal unsafe static string GetString (StringName name)
+        internal unsafe static string GetString(StringName name)
         {
-            return Marshal.PtrToStringAnsi (GetStringInternal (name));
+            return Marshal.PtrToStringAnsi(GetStringInternal(name));
+        }
+
+        internal unsafe static string GetStringi(StringName name, int index)
+        {
+            return Marshal.PtrToStringAnsi(GetStringiInternal(name, index));
         }
 
         protected static IntPtr MarshalStringArrayToPtr (string[] strings)

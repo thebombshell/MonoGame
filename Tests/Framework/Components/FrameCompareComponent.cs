@@ -131,7 +131,7 @@ namespace MonoGame.Tests.Components {
 			if (disposing) {
 				if (_workThread != null) {
 					try {
-						_workThread.Abort ();
+						_workThread.Join ();
 					} catch (ThreadStateException) { }
 					_workThread = null;
 				}
