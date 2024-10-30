@@ -40,6 +40,10 @@ namespace Microsoft.Xna.Framework
             }
 
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.DoubleBuffer, 1);
+
+            // 4.6 Compliance
+            // Change the major and minor versions to match target (4.6)
+
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 4);
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 6);
 

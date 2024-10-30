@@ -112,6 +112,9 @@ namespace Microsoft.Xna.Framework.Graphics
             // once we can author shaders that use texture arrays.
             SupportsTextureArrays = false;
 
+            // 4.6 Compliance
+            // Depth Clamp is no longer an extension and is always supported.
+
             SupportsDepthClamp = true;//GL.Extensions.Contains("GL_ARB_depth_clamp");
 
             SupportsVertexTextures = false; // For now, until we implement vertex textures in OpenGL.

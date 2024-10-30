@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Reflection;
+
 
 #if ANGLE
 using OpenTK.Graphics;
@@ -33,10 +35,17 @@ namespace Microsoft.Xna.Framework.Graphics
             Program,
             Query,
             Framebuffer,
+
+            // 4.6 Compliance
+            // Add Vertex Array Object Resource Type
+
             VertexArray
         }
 
-        // 4.6 COMPLIANCE
+        // 4.6 Compliance
+        // This is rather hacky, but:
+        // Vertex Array Objects are now required, but having a single VAO bound the entire time, has the same effect as never having used one in 2.1, so we're doing that for simplicity
+        // CPU memory is no longer directly accessible and vertex buffers must be assigned to for use of vertex attribute pointers to be used
 
         private int _vertexArrayObject = 0;
         private int _streamingVertexBuffer = 0;
@@ -368,10 +377,13 @@ namespace Microsoft.Xna.Framework.Graphics
             for (int i = 0; i < _bufferBindingInfos.Length; i++)
                 _bufferBindingInfos[i] = new BufferBindingInfo(null, IntPtr.Zero, 0, -1);
 
+            // 4.6 Compliance
+            // see top of class for explaination
+
             GL.GenVertexArrays(1, out _vertexArrayObject);
             GL.GenBuffers(1, out _streamingVertexBuffer);
             GL.GenBuffers(1, out _streamingIndexBuffer);
-        GL.BindVertexArray(_vertexArrayObject);
+            GL.BindVertexArray(_vertexArrayObject);
         }
         
         private DepthStencilState clearDepthStencilState = new DepthStencilState { StencilEnable = true };
@@ -1089,6 +1101,8 @@ namespace Microsoft.Xna.Framework.Graphics
             GraphicsExtensions.CheckGLError();
         }
 
+        // 4.6 Compliance
+        // This must be marked as unsafe because we now require the size for making a buffer transfer
         unsafe private void PlatformDrawUserPrimitives<T>(
             PrimitiveType primitiveType, T[] vertexData, int vertexOffset, VertexDeclaration vertexDeclaration, int vertexCount)
             where T : struct
@@ -1096,7 +1110,9 @@ namespace Microsoft.Xna.Framework.Graphics
             ApplyState(true);
 
             // 4.6 COMPLIANCE
-            // Unbind current VBOs.
+            // OpenGL 4.6 requires VBOs be bound in order to use them and their Vertex Attrib Pointer functions
+            // So we're working around that by having a set of global VBO's be used as if they were immediate mode memory
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, _streamingVertexBuffer);
             GraphicsExtensions.CheckGLError();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _streamingIndexBuffer);
@@ -1111,6 +1127,10 @@ namespace Microsoft.Xna.Framework.Graphics
             var vbHandle = GCHandle.Alloc(vertexData, GCHandleType.Pinned);
             try
             {
+                // 4.6 Compliance
+                // The vbHandle is no longer valid on its own, so we need to use a buffer in its place, hence the _streamingVertexBuffer, and the GL.BufferSubData
+                // We also no longer need an offset in the DrawArrays call as the buffer data will be dumped straight into the origin of the buffer
+
                 var vertexAddr = (IntPtr)(vbHandle.AddrOfPinnedObject().ToInt64());
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)vertexSizeInBytes, vertexAddr);
@@ -1147,14 +1167,14 @@ namespace Microsoft.Xna.Framework.Graphics
             GraphicsExtensions.CheckGLError();
         }
 
+        // 4.6 Compliance
+        // For notes, see the comments around PlatformDrawUserPrimitives
         unsafe private void PlatformDrawUserIndexedPrimitives<T>(
             PrimitiveType primitiveType, T[] vertexData, int vertexOffset, int numVertices, short[] indexData, int indexOffset, int primitiveCount, VertexDeclaration vertexDeclaration)
             where T : struct
         {
             ApplyState(true);
 
-            // 4.6 COMPLIANCE
-            // Rebing the VBOs and skip the pinning
             GL.BindBuffer(BufferTarget.ArrayBuffer, _streamingVertexBuffer);
             GraphicsExtensions.CheckGLError();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _streamingIndexBuffer);

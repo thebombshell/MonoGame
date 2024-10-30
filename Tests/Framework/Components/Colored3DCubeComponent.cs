@@ -75,7 +75,7 @@ namespace MonoGame.Tests.Components {
 			foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes) {
                 pass.Apply();
 
-				graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, number_of_indices);
+				graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, number_of_indices / 3);
 
 			}
 		}

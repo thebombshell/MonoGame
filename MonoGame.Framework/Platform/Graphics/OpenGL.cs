@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MonoGame.Framework.Utilities;
-using System.ComponentModel.Design;
 
 #if __IOS__ || __TVOS__ || MONOMAC
 using ObjCRuntime;
@@ -323,6 +322,11 @@ namespace MonoGame.OpenGL
         TextureBinding2D = 0x8069,
         MaxTextureMaxAnisotropyExt = 0x84FF,
         MaxSamples = 0x8D57,
+        
+        // 4.6 Compliance
+        // NumExtensions is required to query all extension
+
+        NumExtensions = 0x821D
     }
 
     internal enum StringName
@@ -593,6 +597,9 @@ namespace MonoGame.OpenGL
         [MonoNativeFunctionWrapper]
         internal delegate IntPtr GetStringDelegate(StringName param);
         internal static GetStringDelegate GetStringInternal;
+
+        // 4.6 Compliance
+        // GetString no longer works for all queries and some require GetStringi instead
 
         [System.Security.SuppressUnmanagedCodeSecurity()]
         [UnmanagedFunctionPointer(callingConvention)]
@@ -1266,6 +1273,7 @@ namespace MonoGame.OpenGL
         internal static int SwapInterval { get; set; }
 
         // 4.6 COMPLIANCE
+        // VAOs are required by 4.6, even if we're only going to use a single universal VAO to save complication
 
         [System.Security.SuppressUnmanagedCodeSecurity()]
         [MonoNativeFunctionWrapper]
@@ -1310,6 +1318,9 @@ namespace MonoGame.OpenGL
             DisableVertexAttribArray = LoadFunction<DisableVertexAttribArrayDelegate> ("glDisableVertexAttribArray");
             GetIntegerv = LoadFunction<GetIntegerDelegate> ("glGetIntegerv");
             GetStringInternal = LoadFunction<GetStringDelegate>("glGetString");
+
+            // 4.6 Compliance
+
             GetStringiInternal = LoadFunction<GetStringiDelegate>("glGetStringi");
             ClearDepth = LoadFunction<ClearDepthDelegate> ("glClearDepth");
             if (ClearDepth == null)
@@ -1473,7 +1484,21 @@ namespace MonoGame.OpenGL
 
         internal static void LoadExtensions()
         {
-            //LogExtensions();
+            // 4.6 compliance
+            // The extensions string query must now be done by index via glGetStringi
+
+            if (Extensions.Count == 0)
+            {
+                GL.GetInteger(GetPName.NumExtensions, out int extensionsCount);
+                for (int i = 0; i < extensionsCount; i++)
+                {
+                    string extstring = GL.GetStringi(StringName.Extensions, i);
+                    var error = GL.GetError();
+                    if (!string.IsNullOrEmpty(extstring) && error == ErrorCode.NoError)
+                        Extensions.AddRange(extstring.Split(' '));
+                }
+            }
+            LogExtensions();
 
             // 4.6 COMPLIANCE
             // these extensions are now core functionality
@@ -1487,6 +1512,7 @@ namespace MonoGame.OpenGL
         {
             // 4.6 COMPLIANCE
             // this extension is now core functionality
+
             GenRenderbuffers = LoadFunction<GenRenderbuffersDelegate>("glGenRenderbuffers");
             BindRenderbuffer = LoadFunction<BindRenderbufferDelegate>("glBindRenderbuffer");
             DeleteRenderbuffers = LoadFunction<DeleteRenderbuffersDelegate>("glDeleteRenderbuffers");
@@ -1531,6 +1557,9 @@ namespace MonoGame.OpenGL
         {
             return Marshal.PtrToStringAnsi(GetStringInternal(name));
         }
+
+        // 4.6 Compliance
+        // GetStringi is required to get extensions in OpenGL 4.6
 
         internal unsafe static string GetStringi(StringName name, int index)
         {
