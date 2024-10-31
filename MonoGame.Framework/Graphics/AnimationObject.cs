@@ -9,25 +9,25 @@ using System.Threading.Tasks;
 namespace Microsoft.Xna.Framework.Graphics
 {
     /// <summary>
-    /// 
+    /// a single objects single animation data
     /// </summary>
     public sealed class AnimationObject
     {
         /// <summary>
-        /// 
+        /// the name of the object this animation object animates
         /// </summary>
         public string Name { get; private set; }
 
         /// <summary>
-        /// 
+        /// the animation curve data of this animation object
         /// </summary>
         public AnimationCurve[] Curves { get; private set; }
 
         /// <summary>
-        /// 
+        /// creates an animation object with the given name and animation curves
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="curves"></param>
+        /// <param name="name">the name of the object this animation object animates</param>
+        /// <param name="curves">the animation curve data of this animation object</param>
         public AnimationObject(string name, ICollection<AnimationCurve> curves)
         {
             HashSet<AnimationCurveTarget> targets = new HashSet<AnimationCurveTarget>();
@@ -44,10 +44,10 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         /// <summary>
-        /// 
+        /// Generates the world matrix of the animation object at the given time
         /// </summary>
-        /// <param name="x"></param>
-        /// <returns></returns>
+        /// <param name="x">the time at which to sample the animation</param>
+        /// <returns>the parent relative world matrix of the animation object a tthe given time</returns>
         public Matrix Sample(float x)
         {
             Vector3 position = Vector3.Zero;
