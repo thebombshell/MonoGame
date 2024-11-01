@@ -27,9 +27,9 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         /// <summary>
-        /// 
+        /// Overrides values in the target pose with the provided pose.
         /// </summary>
-        /// <param name="a"></param>
+        /// <param name="other">the pose to override with</param>
         public void Set(AnimationPose other)
         {
             foreach (KeyValuePair<string, Matrix> pair in other)
