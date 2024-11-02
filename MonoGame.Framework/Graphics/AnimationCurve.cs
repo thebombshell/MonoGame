@@ -64,6 +64,21 @@ namespace Microsoft.Xna.Framework.Graphics
         /// </summary>
         public AnimationCurveTarget Target { get; private set; }
 
+        /// <summary>
+        /// The earliest timestamp in this object
+        /// </summary>
+        public float StartTime { get; private set; }
+
+        /// <summary>
+        /// The latest timestamp in this object
+        /// </summary>
+        public float EndTime { get; private set; }
+
+        /// <summary>
+        /// The total time in seconds between the start and end timestamps in this object
+        /// </summary>
+        public float Duration { get{return EndTime - StartTime;} }
+
         private ImmutableSortedDictionary<float, float> keys;
 
         /// <summary>

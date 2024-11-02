@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,7 @@ namespace Microsoft.Xna.Framework.Graphics
     /// <summary>
     /// A single total animation
     /// </summary>
-    public sealed class Animation : IReadOnlyDictionary<string, AnimationObject>
+    public sealed class Animation : ReadOnlyDictionary<string, AnimationObject>
     {
         /// <summary>
         /// name of the animation
@@ -20,53 +21,44 @@ namespace Microsoft.Xna.Framework.Graphics
         public string Name { get; private set; }
 
         /// <summary>
-        /// the animation objects
+        /// The earliest timestamp in this object
         /// </summary>
-        public ImmutableDictionary<string, AnimationObject> Objects { get; private set; }
+        public float StartTime { get; private set; }
 
         /// <summary>
-        /// animation object of matching name
+        /// The latest timestamp in this object
         /// </summary>
-        /// <param name="key">name of an animation object</param>
-        /// <returns>an animation object</returns>
-        public AnimationObject this[string key] => Objects[key];
+        public float EndTime { get; private set; }
 
         /// <summary>
-        /// keyed animation object names
+        /// The total time in seconds between the start and end timestamps in this object
         /// </summary>
-        public IEnumerable<string> Keys => Objects.Keys;
+        public float Duration { get { return EndTime - StartTime; } }
 
         /// <summary>
-        /// keyed animation objects
+        /// 
         /// </summary>
-        public IEnumerable<AnimationObject> Values => Objects.Values;
+        /// <param name="name"></param>
+        /// <param name="animationObjects"></param>
+        public Animation(string name, ICollection<AnimationObject> animationObjects) : base(animationObjects.ToImmutableDictionary(o => o.Name, o => o))
+        {
+            Name = name;
+
+        }
 
         /// <summary>
-        /// count of keyed animation objects
+        /// 
         /// </summary>
-        public int Count => Objects.Count;
-
-        /// <summary>
-        /// returns true if a keyed animation object exists with the given name
-        /// </summary>
-        /// <param name="key">the name of an aniamtion object</param>
-        /// <returns>true if a keyed animation object exists with the given name</returns>
-        public bool ContainsKey(string key) => Objects.ContainsKey(key);
-
-        /// <summary>
-        /// returns an enumerator of the keyed animaiton objects
-        /// </summary>
-        /// <returns>an enumerator of the keyed animation objects</returns>
-        public IEnumerator<KeyValuePair<string, AnimationObject>> GetEnumerator() => Objects.GetEnumerator();
-
-        /// <summary>
-        /// try to get the animation object of the given name
-        /// </summary>
-        /// <param name="key">the name to query for an animation object</param>
-        /// <param name="value">the out value aniamtion object</param>
-        /// <returns>true if the animation object is output successfully, false if no matching animation object could be found</returns>
-        public bool TryGetValue(string key, [MaybeNullWhen(false)] out AnimationObject value) => Objects.TryGetValue(key, out value);
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public AnimationPose Sample(float time)
+        {
+            AnimationPose pose = new AnimationPose();
+            foreach (AnimationObject animationObject in Values)
+            {
+                pose.Add(animationObject.Name, animationObject.Sample(time));
+            }
+            return pose;
+        }
     }
 }

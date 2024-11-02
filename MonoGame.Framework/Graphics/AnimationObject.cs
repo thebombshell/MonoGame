@@ -19,6 +19,21 @@ namespace Microsoft.Xna.Framework.Graphics
         public string Name { get; private set; }
 
         /// <summary>
+        /// The earliest timestamp in this object
+        /// </summary>
+        public float StartTime { get; private set; }
+
+        /// <summary>
+        /// The latest timestamp in this object
+        /// </summary>
+        public float EndTime { get; private set; }
+
+        /// <summary>
+        /// The total time in seconds between the start and end timestamps in this object
+        /// </summary>
+        public float Duration { get { return EndTime - StartTime; } }
+
+        /// <summary>
         /// the animation curve data of this animation object
         /// </summary>
         public AnimationCurve[] Curves { get; private set; }
