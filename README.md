@@ -1,4 +1,19 @@
-﻿# MonoGame
+# EDIT: MonoGamePlus
+
+MonoGamePlus is a fork of MonoGame 3.8.X where I will be adding a number of features who fall somewhere out of the scope of MonoGame's core development. The intent is to build up an appendage to the framework which implements common features.
+
+At the time of writing this, the only additions are the following systems:
+## Animated Model System
+The Animated Model System aims to achieve a content processor for fbx animations and provide the means to easily play and blend them, it resides in the ```Microsoft.Xna.Framework.Graphics``` namespace and consists of the following classes:
+* **AnimatedModel** - A helper and container for the ```Model```, ```AnimationColleciton``` and ```Animator``` classes
+* **Animator** - A simple state tracker for animation, using an existing ```Animationcollection```, it handles the generation of ```AnimationPose``` based on an updating animation state
+* **AnimationPose** - A collection of named ```Matrix```'s who can be applied to a ```Model``` updating their pose
+* **AnimationCollection** - A collection of ```Animation```'s
+* **Animation** - A sampleable collection of ```AnimationObject```'s
+* **AnimationObject** - A sampleable named object for whom the animation data provides some or all of a relative world matrix
+* **AnimationCurve** - A sampleable curve describing a single component of an ```AnimationObject```'s world matrix
+
+# ORIGINAL: MonoGame
 
 MonoGame is a simple and powerful .NET framework for creating games for desktop PCs, video game consoles, and mobile devices using the C# programming language. It has been successfully used to create games such as [Streets of Rage 4](https://store.steampowered.com/app/985890/Streets_of_Rage_4/), [Carrion](https://store.steampowered.com/app/953490/CARRION/), [Celeste](https://store.steampowered.com/app/504230/Celeste/), [Stardew Valley](https://store.steampowered.com/app/413150/Stardew_Valley/), and [many others](https://monogame.net/showcase/).
 
